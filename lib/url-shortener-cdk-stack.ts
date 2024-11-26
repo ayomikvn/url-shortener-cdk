@@ -4,14 +4,15 @@ import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
+import * as logs from 'aws-cdk-lib/aws-logs';
 
 export class UrlShortenerCdkStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
-    // DynamDB resource
+    // DYNAMODB RESOURCE
     const urlShortenerDDBTable = new dynamodb.TableV2(this, 'UrlShortenerTable', {
-      partitionKey: { name: 'url-hash', type: dynamodb.AttributeType.STRING },
+      partitionKey: { name: 'short-url-id', type: dynamodb.AttributeType.STRING },
       billing: dynamodb.Billing.onDemand({
         maxReadRequestUnits: 100,
         maxWriteRequestUnits: 100,
@@ -20,7 +21,7 @@ export class UrlShortenerCdkStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
-    // Lambda Resources
+    // LAMBDA RESOURCES
     const urlShortenerFunctionRole = new iam.Role(this, 'UrlShortenerFunctionRole', {
       assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
     });
@@ -28,7 +29,7 @@ export class UrlShortenerCdkStack extends cdk.Stack {
     const urlShortenerFunction = new lambda.Function(this, 'UrlShortenerFunction', {
       runtime: lambda.Runtime.PYTHON_3_13,
       handler: 'lambda_function.lambda_handler',
-      code: lambda.Code.fromAsset('lambda'),
+      code: lambda.Code.fromAsset('lib/lambda'),
       role: urlShortenerFunctionRole
     });
 
@@ -44,14 +45,25 @@ export class UrlShortenerCdkStack extends cdk.Stack {
       resources: [ urlShortenerDDBTable.tableArn ],
     }));
 
-    // API Gateway with Lambda backing
+    // API GATEWAY REST API RESOURCES
+    const UrlShortenerApiAccessLogsLogGroup = new logs.LogGroup(this, "UrlShortenerApiAccessLogs", {
+      retention: logs.RetentionDays.ONE_DAY,
+    });
+
     const urlShortenerApi = new apigateway.LambdaRestApi(this, 'UrlShortenerApi', {
       handler: urlShortenerFunction,
       proxy: false,
+      deployOptions: {
+        accessLogDestination: new apigateway.LogGroupLogDestination(UrlShortenerApiAccessLogsLogGroup),
+        accessLogFormat: apigateway.AccessLogFormat.jsonWithStandardFields()
+      }
     });
         
-    // Define the '/hello' resource with a GET method
-    const shortUrlResource = urlShortenerApi.root.addResource('short-url');
-    shortUrlResource.addMethod('GET');
+    // User makes GET request, passing in original URL to be shortened
+    urlShortenerApi.root.addMethod('GET');
+
+    // User makes GET {short-url-id} request to get redirected to original destination
+    const shortUrlIdResource = urlShortenerApi.root.addResource('{short-url-id}');
+    shortUrlIdResource.addMethod('GET');
   }
 }
