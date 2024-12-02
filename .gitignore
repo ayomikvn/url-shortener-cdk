@@ -6,3 +6,10 @@ node_modules
 # CDK asset staging directory
 .cdk.staging
 cdk.out
+
+# Local state files & OS specifics
+.DS_Store
+lib/.DS_Store
+
+**/site-packages/**/*.pyc
+**/site-packages/**/__pycache__
