@@ -12,7 +12,7 @@ export class UrlShortenerCdkStack extends cdk.Stack {
 
     // DYNAMODB RESOURCE
     const urlShortenerDDBTable = new dynamodb.TableV2(this, 'UrlShortenerTable', {
-      partitionKey: { name: 'short-url-id', type: dynamodb.AttributeType.STRING },
+      partitionKey: { name: 'shortUrlId', type: dynamodb.AttributeType.STRING },
       billing: dynamodb.Billing.onDemand({
         maxReadRequestUnits: 100,
         maxWriteRequestUnits: 100,
@@ -26,21 +26,32 @@ export class UrlShortenerCdkStack extends cdk.Stack {
       assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
     });
 
+    const UrlShortenerFunctionLayer = new lambda.LayerVersion(this, 'UrlShortenerFunctionLayer', {
+      description: "Layer contains URL validation dependency",
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      code: lambda.Code.fromAsset('lib/layer-contents'),
+      compatibleArchitectures: [lambda.Architecture.X86_64, lambda.Architecture.ARM_64],
+    });
+    
     const urlShortenerFunction = new lambda.Function(this, 'UrlShortenerFunction', {
       runtime: lambda.Runtime.PYTHON_3_13,
       handler: 'lambda_function.lambda_handler',
       code: lambda.Code.fromAsset('lib/lambda'),
-      role: urlShortenerFunctionRole
+      role: urlShortenerFunctionRole,
+      layers: [UrlShortenerFunctionLayer],
+      environment: {
+        'URL_SHORTENER_DDB_TABLE': urlShortenerDDBTable.tableArn
+      }
     });
 
     urlShortenerFunctionRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSLambdaBasicExecutionRole"));
     urlShortenerFunctionRole.addToPolicy(new iam.PolicyStatement({
       actions: [
-        'dynamdob:PutItem',
-        'dynamdob:GetItem',
-        'dynamdob:Query',
-        'dynamdob:Scan',
-        'dynamdob:UpdateItem',
+        'dynamodb:PutItem',
+        'dynamodb:GetItem',
+        'dynamodb:Query',
+        'dynamodb:Scan',
+        'dynamodb:UpdateItem',
     ],
       resources: [ urlShortenerDDBTable.tableArn ],
     }));
@@ -59,11 +70,11 @@ export class UrlShortenerCdkStack extends cdk.Stack {
       }
     });
         
-    // User makes GET request, passing in original URL to be shortened
-    urlShortenerApi.root.addMethod('GET');
+    // User makes POST request, passing in original URL to be shortened
+    urlShortenerApi.root.addMethod('POST');
 
-    // User makes GET {short-url-id} request to get redirected to original destination
-    const shortUrlIdResource = urlShortenerApi.root.addResource('{short-url-id}');
+    // User makes GET /{shortUrlId} request to get redirected to original destination
+    const shortUrlIdResource = urlShortenerApi.root.addResource('{shortUrlId}');
     shortUrlIdResource.addMethod('GET');
   }
 }
