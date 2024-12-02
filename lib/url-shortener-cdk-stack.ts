@@ -64,6 +64,8 @@ export class UrlShortenerCdkStack extends cdk.Stack {
     const urlShortenerApi = new apigateway.LambdaRestApi(this, 'UrlShortenerApi', {
       handler: urlShortenerFunction,
       proxy: false,
+      cloudWatchRole: true,
+      cloudWatchRoleRemovalPolicy: cdk.RemovalPolicy.DESTROY,
       deployOptions: {
         accessLogDestination: new apigateway.LogGroupLogDestination(UrlShortenerApiAccessLogsLogGroup),
         accessLogFormat: apigateway.AccessLogFormat.jsonWithStandardFields()
