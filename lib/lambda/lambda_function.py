@@ -20,17 +20,6 @@ URL_SHORTENER_DDB_TABLE = os.environ["URL_SHORTENER_DDB_TABLE"]
 
 
 def lambda_handler(event, context):
-    # /POST /
-    # This function receives a POST request from a user, on the base path, to shorten a URL
-    # It checks to see if there is already a value in DDB for the specified URL path
-    # If exists it returns the value to the user (it should also check if the TTL has not expired),
-    # else it creates a short URL, stores it in the database, and returns it to the user
-
-    # /GET /{shortUrlId}
-    # When a short URL path parameter is received, parse the URL for the string after the base URL
-    # Check that there is a value that exists for this URL, and 301 redirect the user to that URL if it exists
-    # If there is no value for that short URL, tell the user that it is an invalid shortened path
-   
     timeToLiveInSeconds = 259200 # Three days, it could be configurable in future
     response = {
         "statusCode": 200,
