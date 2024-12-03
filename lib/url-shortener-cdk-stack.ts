@@ -1,46 +1,42 @@
 import * as cdk from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
-import * as iam from 'aws-cdk-lib/aws-iam';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
+import * as iam from 'aws-cdk-lib/aws-iam';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 import * as logs from 'aws-cdk-lib/aws-logs';
 
+
+interface UrlShortenerCdkStackProps extends cdk.StackProps {
+  urlShortenerFunctionLayerArn: string;
+  urlShortenerDDBTableArn: string;
+}
+
 export class UrlShortenerCdkStack extends cdk.Stack {
-  constructor(scope: Construct, id: string, props?: cdk.StackProps) {
+  constructor(scope: Construct, id: string, props: UrlShortenerCdkStackProps) {
     super(scope, id, props);
 
-    // DYNAMODB RESOURCE
-    const urlShortenerDDBTable = new dynamodb.TableV2(this, 'UrlShortenerTable', {
-      partitionKey: { name: 'shortUrlId', type: dynamodb.AttributeType.STRING },
-      billing: dynamodb.Billing.onDemand({
-        maxReadRequestUnits: 100,
-        maxWriteRequestUnits: 100,
-      }),
-      deletionProtection: false,
-      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    // Import the DynamoDB table
+    const importedUrlShortenerDDBTable = dynamodb.TableV2.fromTableAttributes(this, 'ImportedUrlShortenerDDBTable', {
+      tableArn: props.urlShortenerDDBTableArn,
     });
+
+    // Import Lambda layer
+    const importedUrlShortenerFunctionLayer = lambda.LayerVersion.fromLayerVersionArn(this, 'ImportedUrlShortenerFunctionLayer', props.urlShortenerFunctionLayerArn);
 
     // LAMBDA RESOURCES
     const urlShortenerFunctionRole = new iam.Role(this, 'UrlShortenerFunctionRole', {
       assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
     });
 
-    const UrlShortenerFunctionLayer = new lambda.LayerVersion(this, 'UrlShortenerFunctionLayer', {
-      description: "Layer contains URL validation dependency",
-      removalPolicy: cdk.RemovalPolicy.DESTROY,
-      code: lambda.Code.fromAsset('lib/layer-contents'),
-      compatibleArchitectures: [lambda.Architecture.X86_64, lambda.Architecture.ARM_64],
-    });
-    
     const urlShortenerFunction = new lambda.Function(this, 'UrlShortenerFunction', {
       runtime: lambda.Runtime.PYTHON_3_13,
       handler: 'lambda_function.lambda_handler',
       code: lambda.Code.fromAsset('lib/lambda'),
       role: urlShortenerFunctionRole,
-      layers: [UrlShortenerFunctionLayer],
+      layers: [importedUrlShortenerFunctionLayer],
       environment: {
-        'URL_SHORTENER_DDB_TABLE': urlShortenerDDBTable.tableArn
+        'URL_SHORTENER_DDB_TABLE': importedUrlShortenerDDBTable.tableArn
       }
     });
 
@@ -52,8 +48,8 @@ export class UrlShortenerCdkStack extends cdk.Stack {
         'dynamodb:Query',
         'dynamodb:Scan',
         'dynamodb:UpdateItem',
-    ],
-      resources: [ urlShortenerDDBTable.tableArn ],
+      ],
+      resources: [importedUrlShortenerDDBTable.tableArn],
     }));
 
     // API GATEWAY REST API RESOURCES
@@ -71,7 +67,7 @@ export class UrlShortenerCdkStack extends cdk.Stack {
         accessLogFormat: apigateway.AccessLogFormat.jsonWithStandardFields()
       }
     });
-        
+
     // User makes POST request, passing in original URL to be shortened
     urlShortenerApi.root.addMethod('POST');
 
