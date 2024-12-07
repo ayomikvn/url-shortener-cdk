@@ -50,14 +50,23 @@ def lambda_handler(event, context):
                 ddb_dict_item = get_short_url_data(short_url_id)
             except Exception as e:
                 response["body"] = json.dumps(
-                    {"error": "Unable to create short URL, please try again"}
+                    {
+                        "error": {
+                            "type": "Server-side error",
+                            "message": "Unable to create short URL, please try again",
+                        }
+                    }
                 )
                 logging.info(f"An error occurred: {e}")
                 logging.error("Failed to retrieve Short URL data", exc_info=True)
 
             if ddb_dict_item and not is_short_url_expired(ddb_dict_item):
                 response.update(
-                    {"body": json.dumps({"shortUrl": ddb_dict_item["shortUrlId"]})}
+                    {
+                        "body": json.dumps(
+                            {"data": {"shortUrl": ddb_dict_item["shortUrlId"]}}
+                        )
+                    }
                 )
             else:
                 try:
@@ -68,7 +77,7 @@ def lambda_handler(event, context):
                     response.update(
                         {
                             "statusCode": ddb_update_response,
-                            "body": json.dumps({"shortUrl": short_url_id}),
+                            "body": json.dumps({"data": {"shortUrl": short_url_id}}),
                         }
                     )
                 except Exception as e:
@@ -76,7 +85,10 @@ def lambda_handler(event, context):
                         {
                             "body": json.dumps(
                                 {
-                                    "error": "Unable to create short URL, please try again"
+                                    "error": {
+                                        "type": "Server-side error",
+                                        "message": "Unable to create short URL, please try again",
+                                    }
                                 }
                             )
                         }
@@ -87,7 +99,10 @@ def lambda_handler(event, context):
                 {
                     "body": json.dumps(
                         {
-                            "error": "Invalid URL. Please send a valid URL to be shortened"
+                            "error": {
+                                "type": "Client-side error",
+                                "message": "Invalid URL. Please send a valid URL to be shortened",
+                            }
                         }
                     )
                 }
@@ -105,7 +120,10 @@ def lambda_handler(event, context):
                 {
                     "body": json.dumps(
                         {
-                            "error": "Something went wrong, unable to redirect to destination"
+                            "error": {
+                                "type": "Server-side error",
+                                "message": "Something went wrong, unable to redirect to destination",
+                            }
                         }
                     )
                 }
@@ -118,7 +136,10 @@ def lambda_handler(event, context):
             {
                 "body": json.dumps(
                     {
-                        "error": "Invalid request. Please review the request and try again"
+                        "error": {
+                            "type": "Client-side error",
+                            "message": "Invalid request. Please review the request and try again",
+                        }
                     }
                 )
             }
