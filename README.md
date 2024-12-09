@@ -1,6 +1,8 @@
 # URL Shortener CDK Back-end
 
-![URL Shortener Architecture](/public/url-shortener-architecture.png)
+<p align="center">
+  <img src="https://github.com/ayomikvn/url-shortener-cdk/blob/main/url-shortener-architecture.png" alt="URL Shortener Architecture"/>
+</p>
 
 This is the REST API infrastructure back-end for a URL shortener, built with AWS CDK, in TypeScript. Amazon API Gateway handles the HTTP requests and forwards them to an AWS Lambda function for processing. The function performs CRUD operations on an Amazon DynamoDB database, where the original-short URL mappings are stored.
 
