@@ -11,3 +11,6 @@ logging.basicConfig(
 
 # Create a logger instance that other modules can import
 logger = logging.getLogger(__name__)
+
+# Expose `logger` so other modules can use it
+__all__ = ["logger"]

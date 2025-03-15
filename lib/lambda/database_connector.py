@@ -1,6 +1,6 @@
 import os
 import boto3
-import logger
+from logger import logger
 from datetime import datetime, timezone
 from boto3.dynamodb.types import TypeDeserializer
 from exceptions import DynamoDBDeserializationError
