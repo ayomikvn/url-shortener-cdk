@@ -1,0 +1,2 @@
+class DynamoDBDeserializationError(Exception):
+    pass
