@@ -16,7 +16,7 @@ A user sends a POST request to the REST API, on the base path, to shorten a URL.
 
 ### Using the short URL
 
-A user sends a GET request, specifying the short URL as a path parameter like this `/{shortUrlId}`. This could be done by pasting the URL (`https://api-id.execute-api.region.amazonaws.com/stage/{shortUrlId}`) in the browser, or using client tools like *cURL* or *Postman*. The function then parses the URL for the string after the base URL. It checks that there is a value that exists for this short URL and responds to with a HTTP 301 redirect if there is a valid entry. If there is no valid value for that short URL, it tells the user that it is an invalid short URL or that it has expired, depending on if there is an unexpired database entry or not.
+A user sends a GET request, specifying the short URL as a path parameter like this `/{shortUrlId}`. This could be done by pasting the URL (`https://api-id.execute-api.region.amazonaws.com/{stage}/{shortUrlId}`, where stage could be `prod`, `dev` etc.) in the browser, or using client tools like *cURL* or *Postman*. The function then parses the URL for the string after the base URL. It checks that there is a value that exists for this short URL and responds to with a HTTP 301 redirect if there is a valid entry. If there is no valid value for that short URL, it tells the user that it is an invalid short URL or that it has expired, depending on if there is an unexpired database entry or not.
 
 ## Setup and deployment
 
