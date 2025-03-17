@@ -100,6 +100,8 @@ export class UrlShortenerCdkStack extends cdk.Stack {
       }
     );
 
+    urlShortenerApi.root.addMethod("OPTIONS")
+
     // User makes POST request, passing in original URL to be shortened
     urlShortenerApi.root.addMethod("POST");
 
